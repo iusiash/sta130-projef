@@ -3,6 +3,7 @@ title: "sta130proj"
 output: html_document
 date: "2023-03-18"
 ---
+ctil + Alt + I to insert codechunk(window)
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -10,18 +11,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r cars}
 library(tidyverse)
 ```
+
 ```{r}
+# load basic data
 library(rhdf5)
 header <- h5ls("STA130_APOGEE.h5")
-wavelength <- "STA130_APOGEE.h5" %>% h5read("wavelength") %>% as_tibble()
-wavelength
 ```
 
 ```{r}
@@ -30,3 +28,64 @@ glimpse(header)
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
+
+```{r}
+# test a simple visualization from two tibble we are focusing on
+effective_temp <- "STA130_APOGEE.h5" %>% h5read("teff") %>% as_tibble()
+logg_gravity <- "STA130_APOGEE.h5" %>% h5read("logg") %>% as_tibble()
+ggplot() + aes(x=effective_temp$value, y=logg_gravity$value) + geom_bin_2d(bins=200)
+```
+
+```{r}
+# this is the linear regression analyze of our second research problem
+et = "STA130_APOGEE.h5" %>% h5read("teff")
+loggra = "STA130_APOGEE.h5" %>% h5read("logg")
+df <- data.frame(loggra, et)
+model <- lm(et ~ loggra, data = df) %>% summary
+ggplot(df, aes(x = loggra, y = et)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+df
+model
+```
+
+```{r}
+# this is multilinear regression analyze of question 3
+feh <- "STA130_APOGEE.h5" %>% h5read("fe_h") %>% as_tibble() 
+feh_abundance <- feh %>% mutate(abundance = case_when(value < 0 ~ 0, value >= 0 ~ 1))
+
+cah <- "STA130_APOGEE.h5" %>% h5read("ca_h") %>% as_tibble() 
+cah_abundance <- cah %>% mutate(abundance = case_when(value < 0 ~ 0, value >= 0 ~ 1))
+
+alh <- "STA130_APOGEE.h5" %>% h5read("al_h") %>% as_tibble() 
+alh_abundance <- alh %>% mutate(abundance = case_when(value < 0 ~ 0, value >= 0 ~ 1))
+
+mgh <- "STA130_APOGEE.h5" %>% h5read("mg_h") %>% as_tibble() 
+mgh_abundance <- mgh %>% mutate(abundance = case_when(value < 0 ~ 0, value >= 0 ~ 1))
+
+model3 <- lm(loggra ~ feh_abundance$abundance + cah_abundance$abundance + alh_abundance$abundance + mgh_abundance$abundance, data = df) %>% summary
+model3
+
+df3 <- data.frame(loggra, ca_al_abundance_interact = cah$value + alh$value)
+df3
+df3 %>% ggplot(aes(x = loggra, y = ca_al_abundance_interact)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+df4 <- data.frame(loggra, feh_abundance_interact = feh$value)
+df4
+df4 %>% ggplot(aes(x = loggra, y = feh_abundance_interact)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+df5 <- data.frame(loggra, mgh_abundance_interact = mgh$value)
+df5
+df5 %>% ggplot(aes(x = loggra, y = mgh_abundance_interact)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
