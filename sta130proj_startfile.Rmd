@@ -34,14 +34,38 @@ glimpse(header)
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 
-```{r}
-# test a simple visualization from two tibble we are focusing on
-effective_temp <- "STA130_APOGEE.h5" %>% h5read("teff") %>% as_tibble()
-logg_gravity <- "STA130_APOGEE.h5" %>% h5read("logg") %>% as_tibble()
-ggplot() + aes(x=effective_temp$value, y=logg_gravity$value) + geom_bin_2d(bins=200)
-```
+
+*Method*
+*We choosing the method of Two Sample hypothesis Test(approximation test) which is two sided hypothesis test, to analysis and study if the effective temperature of stellar with a positive Ca/H be same as the stellar with a negative Ca/H.  temperatures similar to the stellar with negative [Ca/H] values.*
+*$H_{0}: \text{ch}{1} = \text{ch}{2}$*
+*$H_{0}$ state the stellar with positive [Ca/H]($\text{ch}{1}$) generally have same effective temperatures to the stellar with negative [Ca/H] values($\text{ch}{2}$)*
+*$H_{1}: \text{ch}{1}  \neq {ch}{2}$*
+*$H_{0}$ state the stellar with positive [Ca/H]($\text{ch}{1}$) generally have different effective temperatures to the stellar with negative [Ca/H] values($\text{ch}{2}$)*
+*The significant level was set to be 0.05, so if the p-value is smaller than 0.05, we will reject $H_{0}$, if it is larger than 0.05, we will support $H_{1}$.*
+*Firstly, we calculate the observed test statistic of mean value of the temperature positive Ca/H and negative Ca/H and their difference(is 22 Celsius degree). Then we do 100 number of loop, each time shuffling the "Ca/H" variable and calculate the mean of the negative and positive Ca/H's temperature by bootstrap method, then calculated the difference of the stimulated mean temperature, stored it in simulated_values[i].*
+*Then we calculated the p-value using the observed test statistic and simulated_values(the sampling distribution by assuming $H_{0}$ is true), and compare with the significant level(in this case is 0.05).*
+
+
+*P-value result interpretation*
+*We get a p-value of 0 in this case(since we have around 90000 data so it is very likely to get a p-value of 0).And 0 is smaller than the significant level of 0.05 so we reject the $H_{0}$ state the stellar with positive [Ca/H]($\text{ch}{1}$) generally have same effective temperatures to the stellar with negative [Ca/H] values($\text{ch}{2}$), which means though the Two sample hypothesis test, we support the $\text{ch}{1}$, which the temperature of stellar with positive [Ca/H]($\text{ch}{1}$) generally have different effective temperatures to the stellar with negative [Ca/H] values($\text{ch}{2}$).*
+
+
 
 ```{r}
+
+# this is the first visualization of our first research quesiton
+df0 <- data.frame(cah_abundance, et)#two variables are defined below
+lm(et ~ abundance, data = df0) %>% summary
+
+ggplot(df0, aes(x = abundance, y = et)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+
+
 # this is the linear regression analyze of our second research problem
 et = "STA130_APOGEE.h5" %>% h5read("teff")
 loggra = "STA130_APOGEE.h5" %>% h5read("logg")
@@ -85,7 +109,9 @@ df3 %>% ggplot(aes(x = loggra, y = ca_al_abundance_interact)) +
 ```
 
 ```{r}
+
 #this is the new linear regression analyze and visualization of heavy elements respectively
+
 df4 = data.frame(loggra, cah = cah$value, alh = alh$value, mgh = mgh$value, feh = feh$value)
 
 lm(loggra ~ mgh, data = df4) %>% summary
@@ -109,6 +135,7 @@ df4 %>% ggplot(aes(x = loggra, y = cah)) +
   geom_smooth(method = "lm")
 
 ```
+
 ```{r}
 df4 %>% summarise(correlationfeh = 
                               cor(loggra, feh))
@@ -125,4 +152,3 @@ summary(lm(cah ~ loggra, data = df4))
 summary(lm(mgh ~ loggra, data = df4))
 summary(lm(alh ~ loggra, data = df4))
 ```
-
